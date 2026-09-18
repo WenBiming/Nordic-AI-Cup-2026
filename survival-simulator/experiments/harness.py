@@ -47,6 +47,7 @@ def _instrument(env, stats):
     def spawn_agent(*args, **kwargs):
         if kwargs.get("parent") is not None:
             stats["spawned"] += 1
+            stats["births"].append(round(env.time, 1))
         return orig_spawn(*args, **kwargs)
 
     env.spawn_agent = spawn_agent
@@ -84,7 +85,7 @@ def run_game(policy_spec, policy_kwargs, seed, max_time=3000.0, sample_every=100
     sim = SimulationCore(seed=seed, starting_agents=starting_agents)
     env = sim.env
     stats = {"starved": 0, "eaten": 0, "eaten_energy": 0.0,
-             "fruits_eaten": 0, "fruit_energy": 0.0, "spawned": 0, "deaths": []}
+             "fruits_eaten": 0, "fruit_energy": 0.0, "spawned": 0, "deaths": [], "births": []}
     _instrument(env, stats)
 
     wall_start = time.perf_counter()

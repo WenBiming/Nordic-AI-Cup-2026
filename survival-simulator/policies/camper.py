@@ -35,7 +35,8 @@ class CamperPolicy:
                  ripe_age=18.0, hungry_energy=120.0, spawn_energy=300.0, pop_cap=8,
                  old_age=70.0, old_spawn_energy=110.0, edge_margin=35.0, target_ttl=40,
                  flee_speed_factor=1.0, lookback=False, crowd_max=0, crowd_dist=60.0,
-                 disperse_ticks=25, share_alarm=False, alarm_dist=220.0):
+                 disperse_ticks=25, share_alarm=False, alarm_dist=220.0, aware=False):
+        self.aware = aware  # react only to predators that can see us (their cone pi/3 to 250, disc 60)
         self.lookback = lookback
         # share_alarm: a predator seen by one agent is reported to every sibling it can see,
         # converted into that sibling's frame (siblings' relative facing is observed)
@@ -201,6 +202,9 @@ class CamperPolicy:
         old = obs["age"] > self.old_age
         wants_spawn = (energy > self.spawn_energy) or (old and energy > self.old_spawn_energy)
 
+        if self.aware:
+            preds = [o for o in preds if o["distance"] <= 60.0 or o.get("virtual") and o["distance"] < 100.0
+                     or (not o.get("virtual") and o["distance"] <= 250.0 and abs(o["rel_dir"]) <= 0.5236)]
         if preds:
             p = min(preds, key=lambda o: o["distance"])
             if p["distance"] < self.charge_dist:

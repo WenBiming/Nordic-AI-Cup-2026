@@ -311,5 +311,17 @@ a π/3 cone to 250 plus a 60 disc, so for every predator we see we know whether 
 threats that cannot see us are only *watched* (kept inside our cone, no walking away, 15-tick memory);
 sighting/alarm entries that see us keep the full response. Smoke (seed 0, 900 s): 12–16 % of agent-ticks
 became near-free "watch" ticks that used to be stand-off walking; score 834–870 vs 770 for v2 base on this
-seed, but more kills (38–41 vs 17–26). 10-seed results: in progress. Also added `disperse_richest` (the
-crowd member with the most energy leaves the camp instead of the youngest; the hivemind knows all energies).
+seed, but more kills (38–41 vs 17–26). Also added `disperse_richest` (the crowd member with the most
+energy leaves the camp instead of the youngest; the hivemind knows all energies).
+
+| run | config | mean | median | min | max | starved | eaten | spawned | fruits |
+|---|---|---|---|---|---|---|---|---|---|
+| exp5c (control) | v2 + sprint zone | 920 | 916 | 586 | 1600 | 584 | 167 | 701 | 11744 |
+| exp11a | + `aware` | **1043** | 1018 | 545 | 1517 | 548 | 373 | 871 | 13061 |
+| exp10d | + `select` + `old_always` | **1038** | 982 | **769** | 1580 | 717 | 168 | 835 | 12783 |
+| exp11b | + `aware` + `standoff_trend` | (pending) | | | | | | | |
+
+Awareness buys +120 through the economy (more births, more fruit) at the price of more kills; selection
+with old agents always dumping energy into children buys the same +120 with the fewest kills and the best
+worst case. They fix different things → Exp 13 combines them (also with `disperse_richest`). Exp 12 tries
+awareness on the v1 policy (v1-4c + `aware`; seed 0 had 6 agents alive at t = 900).
