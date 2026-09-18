@@ -46,7 +46,9 @@ class Camper2Policy:
                  select=False, pop_schedule=None, elite_spawn_energy=200.0, weak_spawn_energy=400.0,
                  standoff_trend=False, newborn_energy=0.0, spawn_needs_fruit=False, yield_ticks=30,
                  old_always=False, aware=False, pred_cone=1.0472, pred_vision=250.0, pred_hearing=60.0,
-                 watch_ttl=15, disperse_richest=False):
+                 watch_ttl=15, disperse_richest=False, camp_timeout=0):
+        self.camp_timeout = camp_timeout        # >0: leave a camp after this many ticks without any fruit seen
+        self.camp_biome = {}                    # diagnostics: camping ticks per biome
         self.disperse_richest = disperse_richest  # the crowd member with most energy leaves, not the youngest
         self.energies = {}
         # aware: use the predator's relative looking direction to tell whether it can see us;
@@ -106,7 +108,7 @@ class Camper2Policy:
         if m is None:
             m = {"tree": None, "tree_age": 0, "threats": [], "disperse": 0, "fruits": [],
                  "last_action": None, "penalty": 1.0, "scan": 0, "branch": "?", "yield": 0,
-                 "closing": False}
+                 "closing": False, "last_fruit": 0}
             self.mem[agent_id] = m
         return m
 
@@ -130,7 +132,8 @@ class Camper2Policy:
 
     def stats(self):
         return {"branch_ticks": dict(self.branch_ticks),
-                "branch_energy": {k: round(v, 1) for k, v in self.branch_energy.items()}}
+                "branch_energy": {k: round(v, 1) for k, v in self.branch_energy.items()},
+                "camp_biome": dict(self.camp_biome)}
 
     # ------------------------------------------------------------------ main
     def act(self, step):
@@ -297,6 +300,8 @@ class Camper2Policy:
                     best, best_d = seen, d
             new_fruits.append((fx, fy, self.tick if best is None else best))
         m["fruits"] = new_fruits
+        if new_fruits:
+            m["last_fruit"] = self.tick
 
         if trees:
             tr = min(trees, key=lambda o: o["distance"])
@@ -392,6 +397,10 @@ class Camper2Policy:
             elif camping:
                 turn = 2 * math.pi / self.rotate_period if self.rotate_period else self._scan(m, cone)
                 m["branch"] = "camp"
+                self.camp_biome[obs["biome"]] = self.camp_biome.get(obs["biome"], 0) + 1
+                if self.camp_timeout and self.tick - m["last_fruit"] > self.camp_timeout:
+                    # barren camp (young, dying or desert tree): move on
+                    m["tree"], m["disperse"], m["last_fruit"] = None, self.disperse_ticks, self.tick
             else:
                 move = speed
                 turn = self._steer_off_edges(edges) or self._scan(m, cone)

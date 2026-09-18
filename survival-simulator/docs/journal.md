@@ -319,9 +319,22 @@ energy leaves the camp instead of the youngest; the hivemind knows all energies)
 | exp5c (control) | v2 + sprint zone | 920 | 916 | 586 | 1600 | 584 | 167 | 701 | 11744 |
 | exp11a | + `aware` | **1043** | 1018 | 545 | 1517 | 548 | 373 | 871 | 13061 |
 | exp10d | + `select` + `old_always` | **1038** | 982 | **769** | 1580 | 717 | 168 | 835 | 12783 |
-| exp11b | + `aware` + `standoff_trend` | (pending) | | | | | | | |
+| exp11b | + `aware` + `standoff_trend` | 981 | 943 | 669 | 1590 | 523 | 342 | 815 | 12760 |
+| exp12a | v1-4c + `aware` | 992 | 1023 | 526 | 1352 | 530 | 406 | 886 | 13303 |
+| **exp13a** | + `aware` + `select` + `old_always` | **1111** | 1021 | **867** | 1575 | 624 | 236 | 810 | 14023 |
 
 Awareness buys +120 through the economy (more births, more fruit) at the price of more kills; selection
 with old agents always dumping energy into children buys the same +120 with the fewest kills and the best
-worst case. They fix different things → Exp 13 combines them (also with `disperse_richest`). Exp 12 tries
-awareness on the v1 policy (v1-4c + `aware`; seed 0 had 6 agents alive at t = 900).
+worst case. Combined (13a) they stack: new best on mean and on the worst seed. The stand-off trend adds
+nothing on top of awareness; awareness does not help v1 (v1 has no threat memory to make cheaper).
+Server now serves 13a.
+
+Where the budget goes after awareness (11a vs 5c): stand-off 29 % → 23 % of movement energy, "watch"
+≈ 0, but flee 16 % → 22 % — threat response is still ~45 % of movement energy; the gain is time: 10 % of
+agent-ticks moved from walking away to watching/eating, hence more births.
+
+Autopsy of 11a: per-agent death rate 0.5 → 1.3 → 1.8 → 2.2 → 2.4 per 100 s across 300-s windows
+(natural old-age rate ≈ 0.8). Every run still ends as a camp-level crash: 8 agents with 1400–1900 energy
+→ 2–4 agents with ~200 within 30–40 s. Groups hover at ~175 energy per agent even while eating everything
+they see, so they have no reserve when predators arrive. `camp_timeout` (leave a tree that produced no fruit
+for 30 s) tried on seed 0: 942 vs 1022 without — parked.
