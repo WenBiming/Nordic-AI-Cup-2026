@@ -358,7 +358,16 @@ not sprint)**, 61 % younger than 60 s. Births ≈ deaths ≈ 30 per 300 s at 8 a
 | exp13b | + `disperse_richest` | **1138** | 1110 | 773 | 1659 | 634 | 272 | 856 | 14651 |
 | exp14a | + pop 12 until t=600, then 8 | **1202** | 1173 | 638 | 1747 | 993 | 308 | 1251 | 17983 |
 | exp16a | + `spawn_needs_fruit` | 1031 | 1059 | 589 | 1572 | 571 | 223 | 744 | 12974 |
-| exp14b/c/d, 15a/b/c, 16b | hungry 250 / elite 150 / camp timeout / spawn 400 / pop 6 / pop 6+400 / fitness weights | (pending) | | | | | | | |
+| exp15a | + `spawn_energy=400` | 1136 | 1087 | 777 | 1603 | 662 | 259 | 871 | 14159 |
+| exp15b | + `pop_cap=6` | 947 | 946 | 526 | 1510 | 386 | 170 | 506 | 10335 |
+| exp16b | + fitness weights hearing 1.5 / max_energy 0 / sprint 0.3 | 1010 | 986 | 356 | 1568 | 566 | 209 | 725 | 12941 |
+| exp14b/c/d, 15c, 17a/b/c | hungry 250 / elite 150 / camp timeout / pop 6+400 / 14a+richest schedules | (pending) | | | | | | | |
+
+"Fewer, richer" (pop 6) is clearly worse: bodies matter more than reserves. Dropping `max_energy` from the
+fitness function hurts, so capacity is worth selecting for despite the higher sprint gate.
+
+Serving: `policies/presets.py` names the configurations worth serving; `agent_server.py --preset NAME`
+(or `--policy spec --kw k=v`) selects one, `GET /` reports it. See `docs/02-serving.md`.
 
 With awareness and selection keeping the economy alive, a front-loaded population now pays (+90) — more
 bodies early when fruit is abundant and more mutation tickets — at the cost of a worse floor. Richest-leaves
