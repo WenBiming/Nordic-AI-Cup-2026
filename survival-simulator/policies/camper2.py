@@ -46,7 +46,9 @@ class Camper2Policy:
                  select=False, pop_schedule=None, elite_spawn_energy=200.0, weak_spawn_energy=400.0,
                  standoff_trend=False, newborn_energy=0.0, spawn_needs_fruit=False, yield_ticks=30,
                  old_always=False, aware=False, pred_cone=1.0472, pred_vision=250.0, pred_hearing=60.0,
-                 watch_ttl=15):
+                 watch_ttl=15, disperse_richest=False):
+        self.disperse_richest = disperse_richest  # the crowd member with most energy leaves, not the youngest
+        self.energies = {}
         # aware: use the predator's relative looking direction to tell whether it can see us;
         # predators that cannot are only watched (no walking away)
         self.aware = aware
@@ -144,6 +146,7 @@ class Camper2Policy:
 
         if self.share_alarm:
             self._share_alarms(statuses)
+        self.energies = {a["agent_id"]: a["energy"] for a in statuses}
 
         pop_cap = self.pop_cap
         if self.pop_schedule:
@@ -348,7 +351,15 @@ class Camper2Policy:
                 camping = False
             if camping and m["disperse"] == 0 and self.crowd_max > 0 and energy >= self.newborn_energy:
                 crowd = [s for s in siblings if s["distance"] < self.crowd_dist]
-                if len(crowd) >= self.crowd_max and obs["agent_id"] > max(s["id"] for s in crowd):
+                leaver = False
+                if len(crowd) >= self.crowd_max:
+                    if self.disperse_richest:
+                        top = max(self.energies.get(s["id"], 0.0) for s in crowd)
+                        ties = [s["id"] for s in crowd if abs(self.energies.get(s["id"], 0.0) - top) < 1e-9]
+                        leaver = energy > top or (abs(energy - top) < 1e-9 and obs["agent_id"] > max(ties))
+                    else:
+                        leaver = obs["agent_id"] > max(s["id"] for s in crowd)
+                if leaver:
                     m["disperse"] = self.disperse_ticks
                     cx = sum(math.cos(s["angle"]) for s in crowd)
                     cy = sum(math.sin(s["angle"]) for s in crowd)

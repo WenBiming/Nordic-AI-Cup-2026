@@ -289,4 +289,27 @@ stand and watch), `newborn_energy` (agents below it are never dispersed), `spawn
 
 Note: runs are deterministic within and across processes (verified), so single-seed regressions are exact.
 
-### Exp 10 — isolating the v2.1 options (seeds 0–9, camper2 + `sprint_zone=130`): in progress
+### Exp 10 — isolating the v2.1 options (seeds 0–9, camper2 + `sprint_zone=130`)
+
+| run | option | mean | median | min | starved | eaten | spawned | fruits |
+|---|---|---|---|---|---|---|---|---|
+| exp5c (control) | – | 920 | 916 | 586 | 584 | 167 | 701 | 11744 |
+| exp10a | `standoff_trend` | **972** | 873 | 712 | 595 | 193 | 738 | 11739 |
+| exp10b | `newborn_energy=150` | 813 | 817 | 636 | 505 | 169 | 624 | 10443 |
+| exp10c | `spawn_needs_fruit` | 836 | 827 | 462 | 474 | 181 | 605 | 11138 |
+| exp10d | `select` + `old_always` | (rerunning) | | | | | | |
+| exp9c/9d/9e | pop 16→10→8 (±select) | 823 / 856 / 871 | | | ~1000 | 190–330 | 1140–1340 | ~16000 |
+
+Only the stand-off trend helps (+50, noise-level). Keeping newborns at the camp (10b) or gating spawns on
+fruit at hand (10c) both *reduce* births and score. The front-loaded population (9c–e) doubles births and
+fruit intake and still dies at the same time — more bodies at the same camps.
+
+### Exp 11 — predator awareness (seeds 0–9)
+
+The predator observation carries `rel_dir` = our bearing from the *predator's* facing, and its sensing is
+a π/3 cone to 250 plus a 60 disc, so for every predator we see we know whether it can see us. `aware=true`:
+threats that cannot see us are only *watched* (kept inside our cone, no walking away, 15-tick memory);
+sighting/alarm entries that see us keep the full response. Smoke (seed 0, 900 s): 12–16 % of agent-ticks
+became near-free "watch" ticks that used to be stand-off walking; score 834–870 vs 770 for v2 base on this
+seed, but more kills (38–41 vs 17–26). 10-seed results: in progress. Also added `disperse_richest` (the
+crowd member with the most energy leaves the camp instead of the youngest; the hivemind knows all energies).
