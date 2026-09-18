@@ -15,6 +15,9 @@ if ROOT not in sys.path:
     sys.path.insert(0, ROOT)
 
 os.environ.setdefault("SDL_VIDEODRIVER", "dummy")
+# one BLAS/OpenMP thread per worker process; the simulation is small-matrix numpy, threads only add contention
+for _v in ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS", "VECLIB_MAXIMUM_THREADS"):
+    os.environ.setdefault(_v, "1")
 
 RESULTS_DIR = os.path.join(ROOT, "experiments", "results")
 

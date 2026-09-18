@@ -287,7 +287,12 @@ stand and watch), `newborn_energy` (agents below it are never dispersed), `spawn
 (spawn only with fruit in hearing range; the parent leaves it for the child for 30 ticks), `old_always`
 (old agents dump energy into a child regardless of fitness when the population is below cap).
 
-Note: runs are deterministic within and across processes (verified), so single-seed regressions are exact.
+Note on determinism: the 5c configuration reproduced exactly across processes, but the 13a configuration
+gave 316.19 and 312.39 at t = 300 in two consecutive runs of the same process. The simulator iterates
+Python *sets* of objects (`local_fruits`, `local_predators`, …), so observation and eating order depend on
+memory addresses; any tie (two predators within merge range, two equidistant fruits) can branch a run.
+Single-seed comparisons are therefore approximate; 10-seed means are the unit of evidence, and the
+evaluation server (Linux) will not reproduce local runs anyway.
 
 ### Exp 10 — isolating the v2.1 options (seeds 0–9, camper2 + `sprint_zone=130`)
 
@@ -338,3 +343,23 @@ Autopsy of 11a: per-agent death rate 0.5 → 1.3 → 1.8 → 2.2 → 2.4 per 100
 → 2–4 agents with ~200 within 30–40 s. Groups hover at ~175 energy per agent even while eating everything
 they see, so they have no reserve when predators arrive. `camp_timeout` (leave a tree that produced no fruit
 for 30 s) tried on seed 0: 942 vs 1022 without — parked.
+
+Lifespans in 13a (860 deaths): mean age at death 87.5 s; 35 % die before 60 s. Starved 624 (56 % at
+age ≥ 90 = old age; 153 before 60 = young starvation); eaten 236, **74 % of them below 100 energy (could
+not sprint)**, 61 % younger than 60 s. Births ≈ deaths ≈ 30 per 300 s at 8 agents: a birth every 10 s,
+10 energy/s of pure turnover; the species keeps no reserve.
+
+### Exp 12–16 — stacking on 13a (seeds 0–9; base = `sprint_zone=130 aware select old_always`)
+
+| run | change | mean | median | min | max | starved | eaten | spawned | fruits |
+|---|---|---|---|---|---|---|---|---|---|
+| exp13a | base | 1111 | 1021 | 867 | 1575 | 624 | 236 | 810 | 14023 |
+| exp12b | (v1-4c + aware + alarms) | 1017 | 1078 | 567 | 1327 | 603 | 335 | 888 | 13971 |
+| exp13b | + `disperse_richest` | **1138** | 1110 | 773 | 1659 | 634 | 272 | 856 | 14651 |
+| exp14a | + pop 12 until t=600, then 8 | **1202** | 1173 | 638 | 1747 | 993 | 308 | 1251 | 17983 |
+| exp16a | + `spawn_needs_fruit` | 1031 | 1059 | 589 | 1572 | 571 | 223 | 744 | 12974 |
+| exp14b/c/d, 15a/b/c, 16b | hungry 250 / elite 150 / camp timeout / spawn 400 / pop 6 / pop 6+400 / fitness weights | (pending) | | | | | | | |
+
+With awareness and selection keeping the economy alive, a front-loaded population now pays (+90) — more
+bodies early when fruit is abundant and more mutation tickets — at the cost of a worse floor. Richest-leaves
+adds a little. Spawn-only-with-fruit is out for good. → Exp 17 stacks 14a + richest with three schedules.

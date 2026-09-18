@@ -46,7 +46,11 @@ class Camper2Policy:
                  select=False, pop_schedule=None, elite_spawn_energy=200.0, weak_spawn_energy=400.0,
                  standoff_trend=False, newborn_energy=0.0, spawn_needs_fruit=False, yield_ticks=30,
                  old_always=False, aware=False, pred_cone=1.0472, pred_vision=250.0, pred_hearing=60.0,
-                 watch_ttl=15, disperse_richest=False, camp_timeout=0):
+                 watch_ttl=15, disperse_richest=False, camp_timeout=0, fitness_weights=None):
+        # trait weights for spawn selection; defaults favour walking speed, then hearing
+        self.fitness_weights = dict(speed=2.0, hearing=1.0, vision=0.5, cone=0.4, max_energy=0.4, sprint=0.5)
+        if fitness_weights:
+            self.fitness_weights.update(fitness_weights)
         self.camp_timeout = camp_timeout        # >0: leave a camp after this many ticks without any fruit seen
         self.camp_biome = {}                    # diagnostics: camping ticks per biome
         self.disperse_richest = disperse_richest  # the crowd member with most energy leaves, not the youngest
@@ -189,12 +193,13 @@ class Camper2Policy:
                 self.mem[obs["agent_id"]]["yield"] = self.yield_ticks
         return actions
 
-    @staticmethod
-    def fitness(a):
+    def fitness(self, a):
         """Trait score: walking speed dominates (a walker faster than 15 outpaces a sprinting predator),
         then hearing (predators charge from 90), vision range/cone, energy capacity, sprint."""
-        return (2.0 * a["speed"] / 10 + 1.0 * a["hearing_radius"] / 50 + 0.5 * a["vision_range"] / 200
-                + 0.4 * a["vision_angle"] / 1.0472 + 0.4 * a["max_energy"] / 500 + 0.5 * a["sprint_speed"] / 20)
+        w = self.fitness_weights
+        return (w["speed"] * a["speed"] / 10 + w["hearing"] * a["hearing_radius"] / 50
+                + w["vision"] * a["vision_range"] / 200 + w["cone"] * a["vision_angle"] / 1.0472
+                + w["max_energy"] * a["max_energy"] / 500 + w["sprint"] * a["sprint_speed"] / 20)
 
     def _share_alarms(self, statuses):
         """Report each predator sighting to every sibling the observer can see, in that sibling's frame.
