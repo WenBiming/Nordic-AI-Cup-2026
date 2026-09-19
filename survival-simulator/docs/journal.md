@@ -413,3 +413,14 @@ each tick). → options: `watch_scan` (keep scanning while watching), `escape_mi
 (direction maximising the minimum distance to all threats, sticky), `spawn_cooldown` (ticks between two spawns
 of one parent), `tree_memory` (walk to the nearest remembered tree when the current one is lost), and the
 existing `avoid_camp_biomes`. Exp 19 tests each on 13a, seeds 10–29.
+
+### World model (infrastructure, `policies/worldmodel.py`)
+
+Dead-reckoned pose per agent in shared frames: children initialised from the parent's observation of them,
+founder frames merged on first mutual sighting (5 → 1 frame by t ≈ 160 on seed 3), drift split between the
+two agents of every sighting. Accuracy test against true positions: pairwise distance error < 2 units until
+t ≈ 200, then median 50 and outliers of 500+. Cause (per-tick vector error by branch): the simulator keeps
+the commanded distance on collision and only rotates the direction, and **28–34 % of stand-off/flee ticks
+are collisions** — agents retreat backwards, facing the predator, into obstacles they never saw. Camp/eat/
+to_tree are exact. A 60-tick edge memory (`edge_memory`) does not reduce this (the obstacles were never in
+view). Left as infrastructure; not used by any policy yet.

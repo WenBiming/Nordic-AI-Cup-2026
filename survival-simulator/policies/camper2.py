@@ -48,7 +48,10 @@ class Camper2Policy:
                  old_always=False, aware=False, pred_cone=1.0472, pred_vision=250.0, pred_hearing=60.0,
                  watch_ttl=15, disperse_richest=False, camp_timeout=0, fitness_weights=None,
                  watch_scan=False, escape_minmax=False, escape_hysteresis=0.0, spawn_cooldown=0,
-                 tree_memory=False, tree_mem_ttl=900, tree_max_age=800):
+                 tree_memory=False, tree_mem_ttl=900, tree_max_age=800, edge_memory=0):
+        # edge_memory > 0: remember visible edges for this many ticks (advanced by own motion) so that
+        # a retreat away from a predator does not back into an obstacle the agent no longer sees
+        self.edge_memory = edge_memory
         self.watch_scan = watch_scan            # keep the camp scan going while watching a harmless predator
         self.escape_minmax = escape_minmax      # escape direction maximises the min distance from all threats
         self.escape_hysteresis = escape_hysteresis  # keep last escape direction if the new one is within this angle
@@ -123,7 +126,8 @@ class Camper2Policy:
         if m is None:
             m = {"tree": None, "tree_age": 0, "threats": [], "disperse": 0, "fruits": [],
                  "last_action": None, "penalty": 1.0, "scan": 0, "branch": "?", "yield": 0,
-                 "closing": False, "last_fruit": 0, "trees": [], "esc": None, "last_spawn": -10**9}
+                 "closing": False, "last_fruit": 0, "trees": [], "esc": None, "last_spawn": -10**9,
+                 "edges": []}
             self.mem[agent_id] = m
         return m
 
@@ -271,6 +275,8 @@ class Camper2Policy:
                 edges.append(o["coords"])
             elif t == "Agent":
                 siblings.append(o)
+        if self.edge_memory:
+            edges = self._remember_edges(m, edges)
 
         # ---- threat memory: unseen threats keep approaching, sightings replace nearby entries
         threats = []
@@ -467,6 +473,30 @@ class Camper2Policy:
             if score > best_score:
                 best, best_score = cand, score
         return best
+
+    def _remember_edges(self, m, seen):
+        """Merge currently visible edges into a short memory of edge segments in the local frame."""
+        act, pen = m["last_action"], m["penalty"]
+        mem = []
+        if act is not None:
+            move, mdir, turn = act
+            mx, my = move * pen * math.cos(mdir), move * pen * math.sin(mdir)
+            for (p, q, ttl) in m["edges"]:
+                if ttl <= 1:
+                    continue
+                a = _rotate(p[0] - mx, p[1] - my, -turn)
+                b = _rotate(q[0] - mx, q[1] - my, -turn)
+                mem.append((a, b, ttl - 1))
+        for (p, q) in seen:
+            for i, (a, b, _) in enumerate(mem):
+                if (math.hypot(a[0] - p[0], a[1] - p[1]) < 8 and math.hypot(b[0] - q[0], b[1] - q[1]) < 8) or \
+                   (math.hypot(a[0] - q[0], a[1] - q[1]) < 8 and math.hypot(b[0] - p[0], b[1] - p[1]) < 8):
+                    mem[i] = (tuple(p), tuple(q), self.edge_memory)
+                    break
+            else:
+                mem.append((tuple(p), tuple(q), self.edge_memory))
+        m["edges"] = mem[-40:]
+        return [(a, b) for (a, b, _) in mem]
 
     @staticmethod
     def _minmax_direction(threats, away, speed, horizon=4.0):
