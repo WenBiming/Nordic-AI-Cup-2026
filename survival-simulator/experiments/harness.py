@@ -74,7 +74,43 @@ def _sample(env, state):
         "hearing": round(statistics.fmean(a.hearing_radius for a in agents), 1) if agents else 0.0,
         "vision": round(statistics.fmean(a.vision_radius for a in agents), 1) if agents else 0.0,
         "max_speed": round(max((a.speed for a in agents), default=0.0), 2),
+        "nn_dist": _nn_dist(agents),
+        "max_cluster": _max_cluster(agents),
     }
+
+
+def _nn_dist(agents):
+    """Median distance from an agent to its nearest sibling."""
+    import math
+    if len(agents) < 2:
+        return 0.0
+    ds = []
+    for a in agents:
+        ds.append(min(math.hypot(a.x - b.x, a.y - b.y) for b in agents if b is not a))
+    return round(statistics.median(ds), 1)
+
+
+def _max_cluster(agents, radius=120.0):
+    """Size of the largest group of agents connected by links shorter than radius."""
+    import math
+    n = len(agents)
+    if n == 0:
+        return 0
+    seen, best = set(), 0
+    for i in range(n):
+        if i in seen:
+            continue
+        stack, size = [i], 0
+        seen.add(i)
+        while stack:
+            j = stack.pop()
+            size += 1
+            for k in range(n):
+                if k not in seen and math.hypot(agents[j].x - agents[k].x, agents[j].y - agents[k].y) < radius:
+                    seen.add(k)
+                    stack.append(k)
+        best = max(best, size)
+    return best
 
 
 def run_game(policy_spec, policy_kwargs, seed, max_time=3000.0, sample_every=100,
