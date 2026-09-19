@@ -570,8 +570,9 @@ the platform host (Hetzner Helsinki).
 | 14:26 | 0.1 | endpoint timed out | VM was stopped; infrastructure |
 | 14:49 | 546.5 | none | extinction |
 | 15:08 | **1072.5** | none | extinction; not cut off |
+| 15:40 (team Flamingo, new key) | **1176.9** | none | extinction; 26 min wall-clock, no bottleneck error |
 
-Full-game platform scores so far: 720, 546, 1072 (mean 780; local mean ≈ 1090, per-seed SD ≈ 260).
+Full-game platform scores so far: 720, 546, 1072, 1177 (mean 879; local mean ≈ 1090, per-seed SD ≈ 260).
 A dump of the first three platform requests (`AGENT_DUMP=3`) shows the payload is identical to the local
 simulator's: `sim_time` and `n_agents` present, capitalised observation types, same agent fields, first
 request at t = 0.1. No protocol difference; the gap to the local mean is within three-sample noise.
