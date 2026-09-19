@@ -562,3 +562,18 @@ the optimum of this box.
 structural: map-level coordination via the world model, and planned harvesting of the ~40 % of fruit that
 rots. On the platform, 13a's scores are additionally capped near t ≈ 1000 until the endpoint runs next to
 the platform host (Hetzner Helsinki).
+
+### Platform validations of 13a (2026-09-19, server on Azure Sweden Central)
+
+| UTC | score | errors | note |
+|---|---|---|---|
+| 14:26 | 0.1 | endpoint timed out | VM was stopped; infrastructure |
+| 14:49 | 546.5 | none | extinction |
+| 15:08 | **1072.5** | none | extinction; not cut off |
+
+Full-game platform scores so far: 720, 546, 1072 (mean 780; local mean ≈ 1090, per-seed SD ≈ 260).
+A dump of the first three platform requests (`AGENT_DUMP=3`) shows the payload is identical to the local
+simulator's: `sim_time` and `n_agents` present, capitalised observation types, same agent fields, first
+request at t = 0.1. No protocol difference; the gap to the local mean is within three-sample noise.
+Game-over detection now also uses a score drop, so the three evaluation games reset the hivemind even if
+`sim_time` were absent.
