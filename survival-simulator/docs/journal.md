@@ -361,7 +361,11 @@ not sprint)**, 61 % younger than 60 s. Births ≈ deaths ≈ 30 per 300 s at 8 a
 | exp15a | + `spawn_energy=400` | 1136 | 1087 | 777 | 1603 | 662 | 259 | 871 | 14159 |
 | exp15b | + `pop_cap=6` | 947 | 946 | 526 | 1510 | 386 | 170 | 506 | 10335 |
 | exp16b | + fitness weights hearing 1.5 / max_energy 0 / sprint 0.3 | 1010 | 986 | 356 | 1568 | 566 | 209 | 725 | 12941 |
-| exp14b/c/d, 15c, 17a/b/c | hungry 250 / elite 150 / camp timeout / pop 6+400 / 14a+richest schedules | (pending) | | | | | | | |
+| exp14b | + `hungry_energy=250` | 1092 | 1045 | 740 | 1947 | 608 | 213 | 771 | 12340 |
+| exp14c/d, 15c, 17a/b/c | elite 150 / camp timeout / pop 6+400 / 14a+richest schedules | stopped before finishing (2026-09-19) | | | | | | | |
+
+Noise calibration: exp10d was accidentally run twice with identical settings and gave 10-seed means of
+1038 and 959. Differences below ~100 between configurations are not evidence.
 
 "Fewer, richer" (pop 6) is clearly worse: bodies matter more than reserves. Dropping `max_energy` from the
 fitness function hurts, so capacity is worth selecting for despite the higher sprint gate.
