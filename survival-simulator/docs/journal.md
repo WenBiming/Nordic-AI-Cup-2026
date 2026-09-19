@@ -424,3 +424,27 @@ the commanded distance on collision and only rotates the direction, and **28–3
 are collisions** — agents retreat backwards, facing the predator, into obstacles they never saw. Camp/eat/
 to_tree are exact. A 60-tick edge memory (`edge_memory`) does not reduce this (the obstacles were never in
 view). Left as infrastructure; not used by any policy yet.
+
+### Exp 19 — single options on 13a (seeds 10–29)
+
+| run | option | mean | median | min | max | starved | eaten | spawned |
+|---|---|---|---|---|---|---|---|---|
+| exp18a | 13a | **1100** | 1149 | 739 | 1375 | 1268 | 553 | 1721 |
+| exp18c | 14a + richest | 1065 | 1018 | 742 | 1576 | 1688 | 686 | 2274 |
+| exp19a | `avoid_camp_biomes` swamp/river | 931 | 977 | 577 | 1164 | 1232 | 426 | 1558 |
+| exp19b | `watch_scan` | 964 | 964 | 420 | 1429 | 1110 | 543 | 1553 |
+| exp19c | `escape_minmax` + hysteresis 0.8 | 1048 | 1008 | 692 | 1456 | 1212 | 589 | 1701 |
+| exp19d | `spawn_cooldown=100` | 1035 | 1036 | 536 | 1425 | 1232 | 495 | 1627 |
+| exp19e | `tree_memory` | 926 | 950 | 287 | 1219 | 1049 | 443 | 1392 |
+| exp19f | 13b (`disperse_richest`) | 910 | 941 | 413 | 1507 | 1020 | 434 | 1354 |
+
+Six of six below the baseline (SE ≈ 55): 13a is a local optimum for single switches. Swamp trees are
+worth keeping despite the escape penalty; staring at a harmless predator beats scanning; walking to
+remembered trees loses (trees die within its memory horizon and dead reckoning drifts in stand-offs);
+13b's earlier 1138 was seed noise.
+
+Life composition on 13a (seeds 11, 13): young starvers (15 % of deaths) live **26 s, eat 1 fruit**, spend
+42 % of their ticks in explore/disperse/to_tree — they never learn where the food is. Eaten agents live
+46 s (9 fruits); old-age deaths 122 s (23 fruits). About half of all births never become productive.
+→ `inherit`: the parent sees its newborn (distance, angle, facing), so the hivemind transforms the parent's
+tree, fruit and threat memory into the child's frame at birth (transform verified exact). Exp 22a.
