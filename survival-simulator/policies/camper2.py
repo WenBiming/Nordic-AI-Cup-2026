@@ -48,7 +48,11 @@ class Camper2Policy:
                  old_always=False, aware=False, pred_cone=1.0472, pred_vision=250.0, pred_hearing=60.0,
                  watch_ttl=15, disperse_richest=False, camp_timeout=0, fitness_weights=None,
                  watch_scan=False, escape_minmax=False, escape_hysteresis=0.0, spawn_cooldown=0,
-                 tree_memory=False, tree_mem_ttl=900, tree_max_age=800, edge_memory=0, old_no_eat_age=0.0):
+                 tree_memory=False, tree_mem_ttl=900, tree_max_age=800, edge_memory=0, old_no_eat_age=0.0,
+                 inherit=False):
+        # inherit: a newborn receives its parent's memory (tree, fruit, threats) transformed into its own frame
+        self.inherit = inherit
+        self.last_spawners = []
         # old_no_eat_age > 0: agents older than this leave fruit to the young (their drain is 0.01*age per tick)
         self.old_no_eat_age = old_no_eat_age
         # edge_memory > 0: remember visible edges for this many ticks (advanced by own motion) so that
@@ -171,6 +175,8 @@ class Camper2Policy:
         if self.share_alarm:
             self._share_alarms(statuses)
         self.energies = {a["agent_id"]: a["energy"] for a in statuses}
+        if self.inherit:
+            self._inherit_memory(statuses)
 
         pop_cap = self.pop_cap
         if self.pop_schedule:
@@ -209,6 +215,7 @@ class Camper2Policy:
             if spawn_flags[i]:
                 self.mem[obs["agent_id"]]["yield"] = self.yield_ticks
                 self.mem[obs["agent_id"]]["last_spawn"] = self.tick
+        self.last_spawners = [obs["agent_id"] for i, (obs, _, _) in enumerate(decided) if spawn_flags[i]]
         return actions
 
     def fitness(self, a):
@@ -218,6 +225,34 @@ class Camper2Policy:
         return (w["speed"] * a["speed"] / 10 + w["hearing"] * a["hearing_radius"] / 50
                 + w["vision"] * a["vision_range"] / 200 + w["cone"] * a["vision_angle"] / 1.0472
                 + w["max_energy"] * a["max_energy"] / 500 + w["sprint"] * a["sprint_speed"] / 20)
+
+    def _inherit_memory(self, statuses):
+        """New agents get the memory of the parent that sees them, expressed in their own frame."""
+        by_id = {s["agent_id"]: s for s in statuses}
+        new_ids = [a for a in by_id if a not in self.mem]
+        if not new_ids:
+            return
+        for parent in self.last_spawners:
+            ps = by_id.get(parent)
+            pm = self.mem.get(parent)
+            if ps is None or pm is None:
+                continue
+            for o in ps["observations"]:
+                if o["type"] != "Agent" or o.get("id") not in new_ids:
+                    continue
+                child = self._get_mem(o["id"])
+                bx, by = o["distance"] * math.cos(o["angle"]), o["distance"] * math.sin(o["angle"])
+                rot = -(math.pi - o["rel_dir"] + o["angle"])
+                def tf(pt):
+                    x, y = _rotate(pt[0] - bx, pt[1] - by, rot)
+                    return (x, y, *pt[2:])
+                if pm["tree"] is not None:
+                    child["tree"], child["tree_age"] = tf(pm["tree"])[:2], 0
+                child["fruits"] = [tf(f) for f in pm["fruits"]]
+                child["threats"] = [tf(t) for t in pm["threats"]]
+                if self.tree_memory:
+                    child["trees"] = [tf(t) for t in pm["trees"]]
+                new_ids.remove(o["id"])
 
     def _share_alarms(self, statuses):
         """Report each predator sighting to every sibling the observer can see, in that sibling's frame.
