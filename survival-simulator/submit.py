@@ -21,13 +21,15 @@ BASE = "https://cases.nordicaicup.com/api/v1/usecases/survival-simulator"
 DEFAULT_URL = "http://135.225.108.128"
 
 
-def call(method, path, token=None, body=None):
+def call(method, path, token=None, body=None, ok404=False):
     headers = {"x-token": token} if token else {}
     r = requests.request(method, BASE + path, headers=headers, json=body, timeout=60)
     try:
         data = r.json()
     except ValueError:
         data = r.text
+    if r.status_code == 404 and ok404:
+        return None
     if r.status_code >= 400:
         sys.exit(f"{method} {path} -> HTTP {r.status_code}: {json.dumps(data, indent=2)}")
     return data
@@ -37,7 +39,7 @@ def poll(kind, uuid, token, every=30):
     """Print queue state until the attempt has a result, then print it."""
     while True:
         queued = call("GET", f"/{kind}/queue/{uuid}", token)
-        attempt = call("GET", f"/{kind}/queue/{uuid}/attempt", token)
+        attempt = call("GET", f"/{kind}/queue/{uuid}/attempt", token, ok404=True)  # 404 until finished
         status = queued.get("status") if isinstance(queued, dict) else queued
         pos = queued.get("position_in_queue") if isinstance(queued, dict) else None
         if isinstance(attempt, dict) and attempt.get("finished_at"):
