@@ -448,3 +448,16 @@ Life composition on 13a (seeds 11, 13): young starvers (15 % of deaths) live **2
 46 s (9 fruits); old-age deaths 122 s (23 fruits). About half of all births never become productive.
 → `inherit`: the parent sees its newborn (distance, angle, facing), so the hivemind transforms the parent's
 tree, fruit and threat memory into the child's frame at birth (transform verified exact). Exp 22a.
+
+### Exp 20–22 — spacing, inheritance (seeds 10–29, base 13a = 1100 / min 739)
+
+| run | option | mean | median | min | max | starved | eaten | spawned |
+|---|---|---|---|---|---|---|---|---|
+| **exp20a** | `crowd_max=1` (≤ 2 agents per camp) | **1138** | 1119 | **856** | 1472 | 1449 | 509 | 1858 |
+| exp20b | `crowd_dist=100` | 943 | 872 | 498 | 1504 | 1096 | 492 | 1488 |
+| exp20c | `disperse_ticks=50` | (pending) | | | | | | |
+| exp22a | `inherit` (newborn gets parent's memory) | 1083 | 1084 | 593 | 1564 | 1272 | 574 | 1746 |
+
+Fewer agents per camp is the first change with a better mean and a much better floor; a wider trigger radius
+is harmful (too much wandering). Inheriting the parent's map does not rescue the young — their starvation is
+about barren camps rather than ignorance. Exp 23 re-tests `crowd_max=1` against 13a on seeds 30–49.
