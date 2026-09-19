@@ -461,3 +461,17 @@ tree, fruit and threat memory into the child's frame at birth (transform verifie
 Fewer agents per camp is the first change with a better mean and a much better floor; a wider trigger radius
 is harmful (too much wandering). Inheriting the parent's map does not rescue the young — their starvation is
 about barren camps rather than ignorance. Exp 23 re-tests `crowd_max=1` against 13a on seeds 30–49.
+
+### Exp 21 and noise calibration (seeds 10–29)
+
+| run | option | mean | median | min | max | spawned |
+|---|---|---|---|---|---|---|
+| exp18a / exp18a2 | 13a, two independent draws | 1100 / **1098** | 1149 / 1154 | 739 / 739 | 1375 / 1325 | 1721 / 1752 |
+| exp20c | `disperse_ticks=50` | 1095 | 1066 | 835 | 1377 | 1813 |
+| exp21a | `old_no_eat_age=105` | 1017 | 1047 | 655 | 1398 | 1650 |
+| exp21b | fitness ≈ speed only | 1077 | 1074 | 801 | 1554 | 1757 |
+| exp21c | `elite_spawn_energy=150` | (pending) | | | | |
+
+Two independent 20-seed draws of 13a differ by 2 points (per-seed results mostly repeat; only a few seeds
+branch), so 20-seed means are reliable to ~±20 and `crowd_max=1` (+38, floor +117) is probably real.
+Old agents must keep eating — they are the elite spawners (births 1650 vs 1721 when they stop).
