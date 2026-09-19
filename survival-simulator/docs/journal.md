@@ -376,3 +376,17 @@ Serving: `policies/presets.py` names the configurations worth serving; `agent_se
 With awareness and selection keeping the economy alive, a front-loaded population now pays (+90) — more
 bodies early when fruit is abundant and more mutation tickets — at the cost of a worse floor. Richest-leaves
 adds a little. Spawn-only-with-fruit is out for good. → Exp 17 stacks 14a + richest with three schedules.
+
+## 2026-09-19 — platform validation runs (preset 14a, server on Azure Sweden Central)
+
+| attempt | score | errors | what happened |
+|---|---|---|---|
+| 01:08 UTC | 1024.7 | "accumulated wait time for agent exceeded 600 seconds" | species alive at t ≈ 1025 when the platform stopped the game |
+| 01:46 UTC | 720.4 | none | extinction at t ≈ 720 (inside the local 14a range, min 638) |
+
+Server-side timing during the second run (nginx `$request_time`, 1500 requests): p50 3 ms, p99 5 ms.
+Platform-side rate: 14.9 requests/s ⇒ **67 ms per tick**, i.e. ~60 ms of network per request. The platform
+host is Hetzner Helsinki (46.62.240.126); TCP connect from the Azure VM is a stable 50 ms, from a Stockholm
+laptop 12 ms. Budget for a full game is 20 ms/tick, so any run that survives past t ≈ 1000 is cut off from
+this VM — exactly the runs that score. Conclusion: the endpoint must run near Helsinki (Hetzner hel1 is the
+platform's own datacenter). `deploy/install.sh` installs the service on a fresh Ubuntu host in one command.
