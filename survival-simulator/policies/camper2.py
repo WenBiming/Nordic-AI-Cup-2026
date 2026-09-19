@@ -48,7 +48,9 @@ class Camper2Policy:
                  old_always=False, aware=False, pred_cone=1.0472, pred_vision=250.0, pred_hearing=60.0,
                  watch_ttl=15, disperse_richest=False, camp_timeout=0, fitness_weights=None,
                  watch_scan=False, escape_minmax=False, escape_hysteresis=0.0, spawn_cooldown=0,
-                 tree_memory=False, tree_mem_ttl=900, tree_max_age=800, edge_memory=0):
+                 tree_memory=False, tree_mem_ttl=900, tree_max_age=800, edge_memory=0, old_no_eat_age=0.0):
+        # old_no_eat_age > 0: agents older than this leave fruit to the young (their drain is 0.01*age per tick)
+        self.old_no_eat_age = old_no_eat_age
         # edge_memory > 0: remember visible edges for this many ticks (advanced by own motion) so that
         # a retreat away from a predator does not back into an obstacle the agent no longer sees
         self.edge_memory = edge_memory
@@ -391,7 +393,8 @@ class Camper2Policy:
                 m["branch"] = "standoff"
         else:
             m["esc"] = None
-            target_fruit = None if m["yield"] > 0 else self._pick_fruit(m["fruits"], energy, max_energy)
+            too_old = self.old_no_eat_age and obs["age"] > self.old_no_eat_age and energy >= self.old_spawn_energy
+            target_fruit = None if (m["yield"] > 0 or too_old) else self._pick_fruit(m["fruits"], energy, max_energy)
             camping = m["tree"] is not None and math.hypot(*m["tree"]) <= self.camp_dist
             if camping and obs["biome"] in self.avoid_camp_biomes:
                 m["tree"] = None  # bad ground for escaping; keep exploring
