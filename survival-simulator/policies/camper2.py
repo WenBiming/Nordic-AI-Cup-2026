@@ -46,7 +46,18 @@ class Camper2Policy:
                  select=False, pop_schedule=None, elite_spawn_energy=200.0, weak_spawn_energy=400.0,
                  standoff_trend=False, newborn_energy=0.0, spawn_needs_fruit=False, yield_ticks=30,
                  old_always=False, aware=False, pred_cone=1.0472, pred_vision=250.0, pred_hearing=60.0,
-                 watch_ttl=15, disperse_richest=False, camp_timeout=0, fitness_weights=None):
+                 watch_ttl=15, disperse_richest=False, camp_timeout=0, fitness_weights=None,
+                 watch_scan=False, escape_minmax=False, escape_hysteresis=0.0, spawn_cooldown=0,
+                 tree_memory=False, tree_mem_ttl=900, tree_max_age=800):
+        self.watch_scan = watch_scan            # keep the camp scan going while watching a harmless predator
+        self.escape_minmax = escape_minmax      # escape direction maximises the min distance from all threats
+        self.escape_hysteresis = escape_hysteresis  # keep last escape direction if the new one is within this angle
+        self.spawn_cooldown = spawn_cooldown    # ticks between two spawns of the same agent
+        # tree_memory: remember every tree seen (dead-reckoned in the agent frame); when the current tree
+        # is lost, walk to the nearest remembered one instead of exploring blind
+        self.tree_memory = tree_memory
+        self.tree_mem_ttl = tree_mem_ttl
+        self.tree_max_age = tree_max_age
         # trait weights for spawn selection; defaults favour walking speed, then hearing
         self.fitness_weights = dict(speed=2.0, hearing=1.0, vision=0.5, cone=0.4, max_energy=0.4, sprint=0.5)
         if fitness_weights:
@@ -112,7 +123,7 @@ class Camper2Policy:
         if m is None:
             m = {"tree": None, "tree_age": 0, "threats": [], "disperse": 0, "fruits": [],
                  "last_action": None, "penalty": 1.0, "scan": 0, "branch": "?", "yield": 0,
-                 "closing": False, "last_fruit": 0}
+                 "closing": False, "last_fruit": 0, "trees": [], "esc": None, "last_spawn": -10**9}
             self.mem[agent_id] = m
         return m
 
@@ -191,6 +202,7 @@ class Camper2Policy:
                             "move_direction": mdir, "turn_angle": turn, "spawn_agent": spawn_flags[i]})
             if spawn_flags[i]:
                 self.mem[obs["agent_id"]]["yield"] = self.yield_ticks
+                self.mem[obs["agent_id"]]["last_spawn"] = self.tick
         return actions
 
     def fitness(self, a):
@@ -241,6 +253,10 @@ class Camper2Policy:
                 m["tree"] = None
         m["fruits"] = self._advance(m["fruits"], m["last_action"], m["penalty"])
         m["threats"] = self._advance(m["threats"], m["last_action"], m["penalty"])
+        if self.tree_memory:
+            m["trees"] = self._advance(m["trees"], m["last_action"], m["penalty"])
+        if m["esc"] is not None and m["last_action"] is not None:
+            m["esc"] = _wrap(m["esc"] - m["last_action"][2])
 
         preds, fruits, trees, edges, siblings = [], [], [], [], []
         for o in obs["observations"]:
@@ -308,14 +324,21 @@ class Camper2Policy:
         if new_fruits:
             m["last_fruit"] = self.tick
 
+        if self.tree_memory:
+            self._update_tree_memory(m, trees, hearing)
         if trees:
             tr = min(trees, key=lambda o: o["distance"])
             m["tree"] = (tr["distance"] * math.cos(tr["angle"]), tr["distance"] * math.sin(tr["angle"]))
             m["tree_age"] = 0
+        elif self.tree_memory and m["tree"] is None and m["disperse"] == 0 and m["trees"]:
+            tx, ty, *_ = min(m["trees"], key=lambda t: math.hypot(t[0], t[1]))
+            m["tree"], m["tree_age"] = (tx, ty), -int(math.hypot(tx, ty) / 8)
 
         move, mdir, turn = 0.0, 0.0, 0.0
         old = obs["age"] > self.old_age
         wants_spawn = not threats and ((energy > self.spawn_energy) or (old and energy > self.old_spawn_energy))
+        if wants_spawn and self.spawn_cooldown and self.tick - m["last_spawn"] < self.spawn_cooldown:
+            wants_spawn = False
         if wants_spawn and self.spawn_needs_fruit:
             wants_spawn = any(math.hypot(f[0], f[1]) < hearing for f in m["fruits"])
         if m["yield"] > 0:
@@ -326,7 +349,9 @@ class Camper2Policy:
             # watched: a predator nearby that cannot see us. Keep it inside our cone cheaply.
             nearest = min(threats, key=lambda t: math.hypot(t[0], t[1]))
             nang = math.atan2(nearest[1], nearest[0])
-            if abs(nang) > cone / 2 - 0.15 and math.hypot(nearest[0], nearest[1]) < 150:
+            if self.watch_scan:
+                turn = self._scan(m, cone)
+            elif abs(nang) > cone / 2 - 0.15 and math.hypot(nearest[0], nearest[1]) < 150:
                 turn = nang
             m["branch"] = "watch"
         elif threats:
@@ -339,7 +364,12 @@ class Camper2Policy:
                 ax -= x / d / d
                 ay -= y / d / d
             away = math.atan2(ay, ax)
+            if self.escape_minmax:
+                away = self._minmax_direction(threats, away, speed)
+            if self.escape_hysteresis and m["esc"] is not None and abs(_wrap(away - m["esc"])) < self.escape_hysteresis:
+                away = m["esc"]
             mdir = self._clear_direction(away, edges)
+            m["esc"] = mdir
             if nd < self.charge_dist:
                 can_sprint = energy >= max_energy / 5
                 move = sprint if can_sprint else speed
@@ -354,6 +384,7 @@ class Camper2Policy:
                     turn = nang
                 m["branch"] = "standoff"
         else:
+            m["esc"] = None
             target_fruit = None if m["yield"] > 0 else self._pick_fruit(m["fruits"], energy, max_energy)
             camping = m["tree"] is not None and math.hypot(*m["tree"]) <= self.camp_dist
             if camping and obs["biome"] in self.avoid_camp_biomes:
@@ -436,6 +467,39 @@ class Camper2Policy:
             if score > best_score:
                 best, best_score = cand, score
         return best
+
+    @staticmethod
+    def _minmax_direction(threats, away, speed, horizon=4.0):
+        """Among 16 directions pick the one maximising the minimum distance to any threat after moving
+        `horizon` ticks at walking speed (threats assumed to close head-on); ties favour `away`."""
+        best, best_score = away, -1e9
+        step = speed * horizon
+        for k in range(16):
+            cand = _wrap(away + k * math.pi / 8)
+            cx, cy = step * math.cos(cand), step * math.sin(cand)
+            worst = min(math.hypot(x - cx, y - cy) for (x, y, *_) in threats)
+            score = worst - 0.02 * step * abs(_wrap(cand - away))
+            if score > best_score:
+                best, best_score = cand, score
+        return best
+
+    def _update_tree_memory(self, m, trees, hearing):
+        seen = [(o["distance"] * math.cos(o["angle"]), o["distance"] * math.sin(o["angle"])) for o in trees]
+        mem = []
+        for (x, y, seen_tick, first_tick) in m["trees"]:
+            if math.hypot(x, y) < hearing - 5 and not any(math.hypot(x - sx, y - sy) < 30 for sx, sy in seen):
+                continue  # inside hearing range yet unseen: the tree is gone
+            if self.tick - seen_tick > self.tree_mem_ttl or self.tick - first_tick > self.tree_max_age:
+                continue
+            mem.append([x, y, seen_tick, first_tick])
+        for sx, sy in seen:
+            for t in mem:
+                if math.hypot(t[0] - sx, t[1] - sy) < 30:
+                    t[0], t[1], t[2] = sx, sy, self.tick
+                    break
+            else:
+                mem.append([sx, sy, self.tick, self.tick])
+        m["trees"] = [tuple(t) for t in mem[-30:]]
 
     def _pick_fruit(self, fruits, energy, max_energy):
         if not fruits or energy > max_energy - 25:

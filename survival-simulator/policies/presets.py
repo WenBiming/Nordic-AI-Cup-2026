@@ -16,16 +16,16 @@ PRESETS = {
               "Exp 4c: v1 camper, mean 1060 / min 753"),
     "13a": ("policies.camper2:Camper2Policy",
             {"sprint_zone": 130, "aware": True, "select": True, "old_always": True},
-            "Exp 13a: v2 + awareness + selection, mean 1111 / min 867"),
+            "Exp 13a: v2 + awareness + selection; 1111 (seeds 0-9), 1100 / min 739 (seeds 10-29) - default"),
     "13b": ("policies.camper2:Camper2Policy",
             {"sprint_zone": 130, "aware": True, "select": True, "old_always": True, "disperse_richest": True},
             "Exp 13b: 13a + richest leaves the camp, mean 1138 / min 773"),
     "14a": ("policies.camper2:Camper2Policy",
             {"sprint_zone": 130, "aware": True, "select": True, "old_always": True,
              "pop_schedule": [[0, 12], [600, 8]]},
-            "Exp 14a: 13a + population 12 until t=600, mean 1202 / min 638"),
+            "Exp 14a: 13a + population 12 until t=600; 1202 on seeds 0-9 but 1004 / min 419 on seeds 10-29"),
 }
-DEFAULT_PRESET = "14a"
+DEFAULT_PRESET = "13a"
 
 
 def parse_kwargs(items):

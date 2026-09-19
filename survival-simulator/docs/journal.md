@@ -390,3 +390,26 @@ host is Hetzner Helsinki (46.62.240.126); TCP connect from the Azure VM is a sta
 laptop 12 ms. Budget for a full game is 20 ms/tick, so any run that survives past t ≈ 1000 is cut off from
 this VM — exactly the runs that score. Conclusion: the endpoint must run near Helsinki (Hetzner hel1 is the
 platform's own datacenter). `deploy/install.sh` installs the service on a fresh Ubuntu host in one command.
+
+## 2026-09-19 — autonomous development session
+
+Rule from here on: decisions on ≥ 20 seeds, and new seeds (10–29) so that seeds 0–9 do not get overfitted.
+
+### Exp 18 — baselines on seeds 10–29
+
+| run | config | mean | median | min | max |
+|---|---|---|---|---|---|
+| exp18a | 13a | **1100** | 1149 | 739 | 1375 |
+| exp18b | 14a (pop 12 until 600) | 1004 | 1033 | 419 | 1467 |
+| exp18c | 14a + richest | (pending) | | | |
+
+14a's 1202 on seeds 0–9 was seed luck: over all 30 seeds 13a ≈ 1104 with a much better floor. 13a is the
+base again and the served default.
+
+Late-game kill traces of 14a (seed 12): three siblings born within seconds of each other, all in the swamp,
+eaten in the same second while "sprinting" at an effective 9/tick; an agent in `watch` staring at one harmless
+predator while another approached unseen from behind, then zigzagging between the two (the away-vector flips
+each tick). → options: `watch_scan` (keep scanning while watching), `escape_minmax` + `escape_hysteresis`
+(direction maximising the minimum distance to all threats, sticky), `spawn_cooldown` (ticks between two spawns
+of one parent), `tree_memory` (walk to the nearest remembered tree when the current one is lost), and the
+existing `avoid_camp_biomes`. Exp 19 tests each on 13a, seeds 10–29.
