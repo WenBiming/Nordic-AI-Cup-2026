@@ -513,3 +513,31 @@ t = 600) have no fruit within 60 units: a camper lives off its own tree's 0.1 fr
 trees hold piles of 5–10 ripe fruits (200–400 energy) for whoever walks 300 units (15 energy).
 → `tree_choice="fruit"` (target the visible tree with the most fruit around it, re-target when a richer
 one is in view) and `camp_timeout` (leave a camp that has shown no fruit for 40 s). Exp 24, seeds 10–29.
+
+### Exp 24 and the treadmill (seeds 10–29)
+
+| run | option | mean | median | min | fruits | energy/fruit | intake energy/s |
+|---|---|---|---|---|---|---|---|
+| exp18a | 13a | 1100 | 1149 | 739 | 27334 | 42.3 | 54.1 |
+| exp24a | `tree_choice=fruit` | 988 | 889 | 683 | 26574 | 42.2 | 58.6 |
+| exp24b | `camp_timeout=400` | 1076 | 1103 | 690 | 27772 | 42.5 | 56.6 |
+| exp24c / 24d | both / fruit choice with switch margin 2 | (pending) | | | | | |
+| exp3b (old) | never wait for ripeness | 876 | | | | 40.2 | 65.4 |
+
+Higher intake does not buy survival (24a +8 % energy/s, −110 score; 3b +20 %, −220). Death and birth
+rates per 100 s are the same in every configuration: births 8.0–8.3, deaths 8.5–8.8, of which
+eaten < 40 s ≈ 1.2–1.5, starved < 40 s ≈ 1.2–1.6, starved ≥ 90 s ≈ 3.2 (old age). `inherit` did not
+change young starvation (1.32 vs 1.29). The population cap makes this a treadmill: each death frees a
+slot, a 75-energy child fills it, one child in three dies within 40 s at a cost of 100 energy, and the
+species' fate is decided by whether a bad stretch (several kills in one window) empties the slots faster
+than 300-energy parents can refill them. Single-switch changes redistribute the same turnover.
+
+Directions that could break the treadmill (not done in this session):
+1. **Global coordination** with the world model (`policies/worldmodel.py`): send dispersers to the
+   regions of dead lineages / unattended fruit-rich trees instead of 250 units in a random direction;
+   keep ≥ 4 independent camps alive so one bad window cannot take the species.
+2. **Nomadic harvesting** of the 40 % of production that rots: agents that leave a camp only when a
+   richer visible tree exists (24d tests a switch margin) or move in a planned circuit between remembered
+   trees (needs the world model to avoid dead-reckoning drift).
+3. **Decoys**: predators chase the nearest agent; an old (post-max_age) agent stepping toward a predator
+   that threatens a young one buys the young agent's life for an energy the old one was about to lose.

@@ -49,7 +49,8 @@ class Camper2Policy:
                  watch_ttl=15, disperse_richest=False, camp_timeout=0, fitness_weights=None,
                  watch_scan=False, escape_minmax=False, escape_hysteresis=0.0, spawn_cooldown=0,
                  tree_memory=False, tree_mem_ttl=900, tree_max_age=800, edge_memory=0, old_no_eat_age=0.0,
-                 inherit=False, tree_choice="nearest", tree_fruit_radius=70.0):
+                 inherit=False, tree_choice="nearest", tree_fruit_radius=70.0, tree_switch_margin=0):
+        self.tree_switch_margin = tree_switch_margin  # with tree_choice fruit: switch only for >= this many more fruits
         # tree_choice "fruit": target the visible tree with the most tracked fruit around it (minus a
         # distance term) instead of the nearest one; unattended trees accumulate 5-10 ripe fruits
         self.tree_choice = tree_choice
@@ -380,6 +381,14 @@ class Camper2Policy:
                     n = sum(1 for (fx, fy, _) in m["fruits"] if math.hypot(fx - tx, fy - ty) < self.tree_fruit_radius)
                     return n - o["distance"] / 150.0
                 tr = max(trees, key=tree_score)
+                if self.tree_switch_margin and m["tree"] is not None:
+                    # stick with the current target unless the best visible tree is clearly richer
+                    cur = min(trees, key=lambda o: math.hypot(o["distance"] * math.cos(o["angle"]) - m["tree"][0],
+                                                          o["distance"] * math.sin(o["angle"]) - m["tree"][1]))
+                    if math.hypot(cur["distance"] * math.cos(cur["angle"]) - m["tree"][0],
+                                  cur["distance"] * math.sin(cur["angle"]) - m["tree"][1]) < 30 and \
+                       tree_score(tr) - tree_score(cur) < self.tree_switch_margin:
+                        tr = cur
             else:
                 tr = min(trees, key=lambda o: o["distance"])
             m["tree"] = (tr["distance"] * math.cos(tr["angle"]), tr["distance"] * math.sin(tr["angle"]))
