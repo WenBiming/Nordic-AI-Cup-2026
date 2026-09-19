@@ -32,12 +32,23 @@ def configure(preset=None, spec=None, kwargs=None):
     return policy_info
 
 
+# The simulator sends capitalised observation types; the platform's verify sample sends lowercase ones.
+_TYPES = {"fruit": "Fruit", "agent": "Agent", "predator": "Predator", "tree": "Tree", "edge": "Edge"}
+
+
 @app.post("/predict")
+@app.post("/")  # the platform's verify call posts to the base URL as given
 def predict(step: StepResponse = Body(...)):
     """
     Receives the current simulation state and returns actions for all agents.
     """
-    actions = policy.act(step.model_dump())
+    data = step.model_dump()
+    for agent in data["agent_status"]:
+        for obs in agent["observations"]:
+            t = obs.get("type")
+            if isinstance(t, str):
+                obs["type"] = _TYPES.get(t.lower(), t)
+    actions = policy.act(data)
 
     # Must return {"actions": [...]} format
     return {"actions": actions}
