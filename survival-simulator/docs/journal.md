@@ -541,3 +541,24 @@ Directions that could break the treadmill (not done in this session):
    trees (needs the world model to avoid dead-reckoning drift).
 3. **Decoys**: predators chase the nearest agent; an old (post-max_age) agent stepping toward a predator
    that threatens a young one buys the young agent's life for an energy the old one was about to lose.
+
+### Exp 24c/d, 25 and the random search (seeds 10–29)
+
+| run | change vs 13a (1100) | mean | median | min |
+|---|---|---|---|---|
+| exp24c | fruit tree choice + camp timeout | 1021 | 1044 | 569 |
+| exp24d | fruit tree choice with switch margin 2 | 961 | 977 | 481 |
+| exp25a | `decoy_age=100` (old, poor agents draw predators away) | 981 | 974 | 461 |
+
+Fruit-based tree choice is negative in every form; the decoy fires on 0.7 % of ticks and costs more
+(eaten with energy, fewer births) than it saves. Random search over charge_dist, sprint_zone, threat_ttl,
+spawn_energy, old_age, hungry_energy, crowd_dist (12 candidates, 20 seeds each, `search_s1.csv`): best
+1113 (#2: charge 98, sprint zone 117, ttl 26, …), the rest 974–1064 — the current thresholds are at or near
+the optimum of this box.
+
+**Session result:** no configuration beats 13a within the resolution of 20-seed tests; 13a stays served
+(`--preset 13a`). The analysis pins the ceiling on the cap-limited birth/death treadmill (births ≈ deaths ≈
+8.5 per 100 s in every configuration; one child in three dies within 40 s), and the untried levers are
+structural: map-level coordination via the world model, and planned harvesting of the ~40 % of fruit that
+rots. On the platform, 13a's scores are additionally capped near t ≈ 1000 until the endpoint runs next to
+the platform host (Hetzner Helsinki).

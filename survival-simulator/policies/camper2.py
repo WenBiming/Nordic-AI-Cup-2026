@@ -49,7 +49,13 @@ class Camper2Policy:
                  watch_ttl=15, disperse_richest=False, camp_timeout=0, fitness_weights=None,
                  watch_scan=False, escape_minmax=False, escape_hysteresis=0.0, spawn_cooldown=0,
                  tree_memory=False, tree_mem_ttl=900, tree_max_age=800, edge_memory=0, old_no_eat_age=0.0,
-                 inherit=False, tree_choice="nearest", tree_fruit_radius=70.0, tree_switch_margin=0):
+                 inherit=False, tree_choice="nearest", tree_fruit_radius=70.0, tree_switch_margin=0,
+                 decoy_age=0.0, decoy_energy=220.0, decoy_engage=55.0):
+        # decoy_age > 0: an agent older than this with energy below decoy_energy walks towards a predator
+        # reported by a sibling (alarm) until inside its hearing disc, so the predator chases it instead
+        self.decoy_age = decoy_age
+        self.decoy_energy = decoy_energy
+        self.decoy_engage = decoy_engage
         self.tree_switch_margin = tree_switch_margin  # with tree_choice fruit: switch only for >= this many more fruits
         # tree_choice "fruit": target the visible tree with the most tracked fruit around it (minus a
         # distance term) instead of the nearest one; unattended trees accumulate 5-10 ripe fruits
@@ -407,8 +413,21 @@ class Camper2Policy:
         if m["yield"] > 0:
             m["yield"] -= 1
 
+        decoying = False
+        if self.decoy_age and obs["age"] > self.decoy_age and energy < self.decoy_energy and threats:
+            # virtual (alarm) sightings are stored as threats that do not see us; approach the nearest
+            cands = [t for t in threats if not t[4]] if self.aware else []
+            if cands:
+                tx, ty, *_ = min(cands, key=lambda t: math.hypot(t[0], t[1]))
+                d = math.hypot(tx, ty)
+                if d > self.decoy_engage:
+                    move, mdir = min(speed, d / penalty), math.atan2(ty, tx)
+                    m["branch"] = "decoy"
+                    decoying = True
         active = [t for t in threats if t[4]] if self.aware else threats
-        if threats and not active:
+        if decoying:
+            pass
+        elif threats and not active:
             # watched: a predator nearby that cannot see us. Keep it inside our cone cheaply.
             nearest = min(threats, key=lambda t: math.hypot(t[0], t[1]))
             nang = math.atan2(nearest[1], nearest[0])
