@@ -475,3 +475,27 @@ about barren camps rather than ignorance. Exp 23 re-tests `crowd_max=1` against 
 Two independent 20-seed draws of 13a differ by 2 points (per-seed results mostly repeat; only a few seeds
 branch), so 20-seed means are reliable to ~±20 and `crowd_max=1` (+38, floor +117) is probably real.
 Old agents must keep eating — they are the elite spawners (births 1650 vs 1721 when they stop).
+
+### Exp 23 — paired confirmation on seeds 30–49, and what the noise really is
+
+| run | config | mean | median | min | max |
+|---|---|---|---|---|---|
+| exp23b | 13a | 1067 | 1081 | 623 | 1721 |
+| exp23a | 13a + `crowd_max=1` | 1048 | 1021 | 662 | 1529 |
+| exp21c | 13a + `elite_spawn_energy=150` (seeds 10–29) | 977 | 964 | 538 | 1421 |
+
+Per-seed paired difference (crowd1 − 13a): mean −19, 10 wins of 20, SD 260. The +38 of Exp 20a was noise.
+Calibration: re-running one configuration reproduces its per-seed scores almost exactly (the simulator is
+nearly deterministic per seed), but the *difference between two configurations* has a per-seed SD of ~260,
+so a 20-seed comparison resolves only effects of ~±120 and a +50 change would need ~100 seeds. Every
+single-switch or single-knob change tried in Exp 19–23 is inside that band or clearly negative.
+
+State of the policy after this session: **13a** (`Camper2Policy(sprint_zone=130, aware=True, select=True,
+old_always=True)`), ≈ 1100 on seeds 10–29, 1067 on 30–49, 1111 on 0–9. Random search over the numeric
+knobs (`experiments/search.py`, `search_s1`) is running; results in `experiments/results/search_s1.csv`.
+
+Why the ceiling is ~1100–1300: at t ≈ 1000–1300 (10–13 predators) the per-agent death rate is ~2 per
+100 s against an old-age floor of ~0.8; replacing that needs ~18 energy/s in births at 8 agents while the
+4–8 trees a group occupies yield 16–32 energy/s before living (8/s) and movement (~15/s). The economy
+cannot fund the death rate. Getting past it needs either far fewer predator-induced deaths (hiding, tested
+negative as implemented) or coordinated use of the whole map's trees (world model, built but unused).
