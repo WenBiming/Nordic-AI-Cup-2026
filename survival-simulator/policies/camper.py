@@ -96,9 +96,12 @@ class CamperPolicy:
     # ------------------------------------------------------------------ main
     def act(self, step):
         sim_time = step.get("sim_time", 0.0)
-        if sim_time < self.last_time:
+        score = step.get("score", 0.0) or 0.0
+        # a new game: sim_time goes backwards, or the score drops (score is always sent; sim_time may not be)
+        if sim_time < self.last_time or score < getattr(self, "last_score", 0.0) - 1.0:
             self._reset()
         self.last_time = sim_time
+        self.last_score = score
         self.tick += 1
         n_agents = len(step["agent_status"])
         alive = {a["agent_id"] for a in step["agent_status"]}

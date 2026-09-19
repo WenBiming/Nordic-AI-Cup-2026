@@ -9,6 +9,9 @@
 GET / reports which policy is loaded.
 """
 import argparse
+import json
+import os
+import time
 
 from fastapi import FastAPI, Body
 
@@ -32,6 +35,21 @@ def configure(preset=None, spec=None, kwargs=None):
     return policy_info
 
 
+_dump_left = int(os.environ.get("AGENT_DUMP", "0"))  # AGENT_DUMP=N writes the first N request bodies to /var/tmp
+
+
+def _dump_request(data):
+    global _dump_left
+    if _dump_left <= 0:
+        return
+    _dump_left -= 1
+    try:
+        with open(f"/var/tmp/agent_request_{int(time.time())}_{_dump_left}.json", "w") as f:
+            json.dump(data, f)
+    except OSError:
+        pass
+
+
 # The simulator sends capitalised observation types; the platform's verify sample sends lowercase ones.
 _TYPES = {"fruit": "Fruit", "agent": "Agent", "predator": "Predator", "tree": "Tree", "edge": "Edge"}
 
@@ -43,6 +61,7 @@ def predict(step: StepResponse = Body(...)):
     Receives the current simulation state and returns actions for all agents.
     """
     data = step.model_dump()
+    _dump_request(data)
     for agent in data["agent_status"]:
         for obs in agent["observations"]:
             t = obs.get("type")
