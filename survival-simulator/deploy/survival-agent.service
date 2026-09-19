@@ -1,0 +1,15 @@
+[Unit]
+Description=Survival simulator agent endpoint (Nordic AI Cup 2026)
+After=network.target
+
+[Service]
+User=wenbiming
+WorkingDirectory=/home/wenbiming/Nordic-AI-Cup-2026/survival-simulator
+Environment=SDL_VIDEODRIVER=dummy
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/home/wenbiming/Nordic-AI-Cup-2026/survival-simulator/.venv/bin/python agent_server.py --preset 14a --host 127.0.0.1 --port 9052
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target
