@@ -49,7 +49,11 @@ class Camper2Policy:
                  watch_ttl=15, disperse_richest=False, camp_timeout=0, fitness_weights=None,
                  watch_scan=False, escape_minmax=False, escape_hysteresis=0.0, spawn_cooldown=0,
                  tree_memory=False, tree_mem_ttl=900, tree_max_age=800, edge_memory=0, old_no_eat_age=0.0,
-                 inherit=False):
+                 inherit=False, tree_choice="nearest", tree_fruit_radius=70.0):
+        # tree_choice "fruit": target the visible tree with the most tracked fruit around it (minus a
+        # distance term) instead of the nearest one; unattended trees accumulate 5-10 ripe fruits
+        self.tree_choice = tree_choice
+        self.tree_fruit_radius = tree_fruit_radius
         # inherit: a newborn receives its parent's memory (tree, fruit, threats) transformed into its own frame
         self.inherit = inherit
         self.last_spawners = []
@@ -370,7 +374,14 @@ class Camper2Policy:
         if self.tree_memory:
             self._update_tree_memory(m, trees, hearing)
         if trees:
-            tr = min(trees, key=lambda o: o["distance"])
+            if self.tree_choice == "fruit" and len(trees) > 1:
+                def tree_score(o):
+                    tx, ty = o["distance"] * math.cos(o["angle"]), o["distance"] * math.sin(o["angle"])
+                    n = sum(1 for (fx, fy, _) in m["fruits"] if math.hypot(fx - tx, fy - ty) < self.tree_fruit_radius)
+                    return n - o["distance"] / 150.0
+                tr = max(trees, key=tree_score)
+            else:
+                tr = min(trees, key=lambda o: o["distance"])
             m["tree"] = (tr["distance"] * math.cos(tr["angle"]), tr["distance"] * math.sin(tr["angle"]))
             m["tree_age"] = 0
         elif self.tree_memory and m["tree"] is None and m["disperse"] == 0 and m["trees"]:

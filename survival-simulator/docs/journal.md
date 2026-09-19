@@ -499,3 +499,17 @@ Why the ceiling is ~1100–1300: at t ≈ 1000–1300 (10–13 predators) the pe
 4–8 trees a group occupies yield 16–32 energy/s before living (8/s) and movement (~15/s). The economy
 cannot fund the death rate. Getting past it needs either far fewer predator-induced deaths (hiding, tested
 negative as implemented) or coordinated use of the whole map's trees (world model, built but unused).
+
+### The resource left on the table (seed 31, 13a, instrumented)
+
+Crowding is not the crash mechanism: largest cluster ≈ 2.3 agents, median nearest-sibling distance
+140–190 units, correlation of clustering with survival 0.0 (Exp 23b). The population declines *gradually*
+from t ≈ 600 (7.2 → 6.3 → 5.6 → 4.6 → 3.0 agents per 200-s window): births < deaths.
+
+Where the food is: **only 5–13 % of the fruit on the map is within 100 units of any agent**; 70–100
+fruits (3–4 k energy) stand uneaten at unattended trees and rot after 100 s (≈ 0.8 fruit/s lost, against
+1.24 fruit/s eaten — the species captures ~60 % of the map's production). 76 % of camping ticks (97 % after
+t = 600) have no fruit within 60 units: a camper lives off its own tree's 0.1 fruit/s while unattended mature
+trees hold piles of 5–10 ripe fruits (200–400 energy) for whoever walks 300 units (15 energy).
+→ `tree_choice="fruit"` (target the visible tree with the most fruit around it, re-target when a richer
+one is in view) and `camp_timeout` (leave a camp that has shown no fruit for 40 s). Exp 24, seeds 10–29.
