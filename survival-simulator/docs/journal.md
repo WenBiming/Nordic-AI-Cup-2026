@@ -578,3 +578,9 @@ simulator's: `sim_time` and `n_agents` present, capitalised observation types, s
 request at t = 0.1. No protocol difference; the gap to the local mean is within three-sample noise.
 Game-over detection now also uses a score drop, so the three evaluation games reset the hivemind even if
 `sim_time` were absent.
+
+## 2026-09-20 — evaluation
+
+Team Flamingo, preset 13a served from the Azure VM: **evaluation score 925.08**, `errors: []`
+(three preset-seed games, 00:35–01:08 UTC, 33 min wall-clock, 2 ms server time per request).
+Platform full-game scores for 13a: validations 720 / 546 / 1072 / 1177, evaluation 925 (mean of 3).
